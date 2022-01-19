@@ -1,6 +1,6 @@
 # IDE
 .idea
-corenlp/
+corenlp/*
 run_*.sh
 # igore log files
 log.txt
