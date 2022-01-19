@@ -20,7 +20,7 @@ def test_dependency():
         "outputFormat": "json",
     }
 
-    DependencyBasedGraphConstruction.topology(
+    DependencyBasedGraphConstruction.static_topology(
         raw_data,
         nlp_parser,
         processor_args=processor_args,
