@@ -4,6 +4,7 @@ import stanza
 
 corenlp_dir = './corenlp'
 stanza.install_corenlp(dir=corenlp_dir)
+os.environ["CORENLP_HOME"] = corenlp_dir
 
 
 from stanza.server import CoreNLPClient

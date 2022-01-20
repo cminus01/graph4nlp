@@ -1,9 +1,9 @@
 import json
-import stanza
+import os, stanza
 
 corenlp_dir = './corenlp'
 stanza.install_corenlp(dir=corenlp_dir)
-
+os.environ["CORENLP_HOME"] = corenlp_dir
 
 # os.environ["CORENLP_HOME"] = "/home/shiina/software/stanford-corenlp-4.0.0"
 import unittest
@@ -23,11 +23,12 @@ class TextStanzaWithStanfordCoreNLP(unittest.TestCase):
     def test_dependency(self):
         print("Test dependency parsing api.........")
         client = CoreNLPClient(
-            annotators=[ "ssplit,tokenize,depparse"], 
+            annotators=["tokenize,ssplit,pos,depparse"], 
             memory='4G', 
-            endpoint='http://localhost:9001',
+            endpoint='http://localhost:9002',
             be_quiet=True,
             output_format="json")
+        
         client.start()
 
         output = client.annotate(
@@ -59,7 +60,7 @@ class TextStanzaWithStanfordCoreNLP(unittest.TestCase):
         client = CoreNLPClient(
             annotators=[ "tokenize,ssplit,pos,parse"], 
             memory='4G', 
-            endpoint='http://localhost:9001',
+            endpoint='http://localhost:9002',
             be_quiet=True,
             output_format="json")
         client.start()
@@ -73,6 +74,8 @@ class TextStanzaWithStanfordCoreNLP(unittest.TestCase):
                     "ssplit.isOneSentence": False,
         })
         new_dict = output
+        print(len(new_dict['sentences']), new_dict['sentences'][0].keys(), "111111111")
+        
 
         old_output = self.nlp_parser.annotate(text=self.text, properties={
                             "annotators": "tokenize,ssplit,pos,parse",
@@ -84,16 +87,21 @@ class TextStanzaWithStanfordCoreNLP(unittest.TestCase):
                         })
 
         old_dict = json.loads(old_output)
+        old_dict["sentences"][0].pop('binaryParse')   # attention: 旧版多了这个key, 新版无了
+        print(len(old_dict['sentences']), old_dict['sentences'][0].keys(), "ppppp")
+        
+        print(new_dict == old_dict)
+        
 
         self.assertEqual(new_dict, old_dict)
         client.stop()
 
-    def test_ie(self):
+    def test_ie(self):  # attention: 新旧版本还是有差距的，需要注意
         print("Test ie parsing api: coref.........")
         client = CoreNLPClient(
             annotators=[ "tokenize, ssplit, pos, lemma, ner, parse, coref, openie"], 
             memory='4G', 
-            endpoint='http://localhost:9001',
+            endpoint='http://localhost:9003',
             be_quiet=True,
             output_format="json")
         client.start()
