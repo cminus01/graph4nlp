@@ -1,14 +1,62 @@
+import argparse
 import torch
 import dgl
 import time
 import torch.nn.functional as F
 from torchmetrics.functional import accuracy
 from rgcn import RGCN
-from dgl.data.rdf import AIFBDataset
+from dgl.data.rdf import AIFBDataset, MUTAGDataset, BGSDataset, AMDataset
 from graph4nlp.pytorch.data.data import from_dgl
 
-def load_data(get_norm=False, inv_target=False):
-    dataset = AIFBDataset()
+# Fix random seed
+# torch.manual_seed(1024)
+# import random
+# random.seed(1024)
+# import numpy as np
+# np.random.seed(1024)
+
+# Load dataset 
+# Reference: dgl/examples/pytorch/rgcn/entity_utils.py (https://github.com/dmlc/dgl/blob/master/examples/pytorch/rgcn/entity_utils.py)
+def load_data(data_name='aifb', get_norm=False, inv_target=False):
+    if data_name == 'aifb':
+        dataset = AIFBDataset()
+        # Test Accuracy:
+        # 0.9444, 0.8889, 0.9722, 0.9167, 0.9444 without enorm.
+        # 0.8611, 0.8889, 0.8889, 0.8889, 0.8333
+        # avg: 0.93332 (without enorm)
+        # avg: 0.87222
+        # DGL: 0.8889, 0.8889, 0.8056, 0.8889, 0.8611
+        # DGL avg: 0.86668
+        # paper: 0.9583
+        # note: Could stuck at Local minimum of train loss between 0.2-0.35.
+    elif data_name == 'mutag':
+        dataset = MUTAGDataset()
+        # Test Accuracy:
+        # 0.6912, 0.7500, 0.7353, 0.6324, 0.7353
+        # avg: 0.68884
+        # DGL: 0.6765, 0.7059, 0.7353, 0.6765, 0.6912
+        # DGL avg: 0.69724
+        # paper: 0.7323
+        # note: Could stuck at local minimum of train acc: 0.3897 & loss 0.6931
+    elif data_name == 'bgs':
+        dataset = BGSDataset()
+        # Test Accuracy:
+        # 0.8966, 0.9310, 0.8966, 0.7931, 0.8621
+        # avg: 0.87588
+        # DGL: 0.7931, 0.9310, 0.8966, 0.8276, 0.8966
+        # DGL avg: 0.86898          
+        # paper: 0.8310
+        # note: Could stuck at local minimum of train acc: 0.6325 & loss: 0.6931
+    else:
+        dataset = AMDataset()
+        # Test Accuracy:
+        # 0.7525, 0.7374, 0.7424, 0.7424, 0.7424
+        # avg: 0.74342
+        # DGL: 0.7677, 0.7677, 0.7323, 0.7879, 0.7677
+        # DGL avg: 0.76466
+        # paper: 0.8929
+        # note: args.hidden_size is 10. 
+        # Could stuck at local minimum of train loss: 0.3-0.5
 
     # Load hetero-graph
     hg = dataset[0]
@@ -30,22 +78,11 @@ def load_data(get_norm=False, inv_target=False):
         edata = ['norm']
     else:
         edata = None
-
-    # get target category id
     category_id = hg.ntypes.index(category)
-    g = hg
-    # print(hg.ndata.keys())
     g = dgl.to_homogeneous(hg, edata=edata)
-    # print(g.ndata)
-    # print(g.edata)
-    # Rename the fields as they can be changed by for example NodeDataLoader
-    # g.ndata['ntype'] = g.ndata.pop(dgl.NTYPE)
-    # g.ndata['type_id'] = g.ndata.pop(dgl.NID)
-    # g.is_homogeneous=False
     node_ids = torch.arange(g.num_nodes())
 
     # find out the target node ids in g
-    # loc = (g.ndata['ntype'] == category_id)
     loc = (g.ndata['_TYPE'] == category_id)
     target_idx = node_ids[loc]
 
@@ -59,38 +96,25 @@ def load_data(get_norm=False, inv_target=False):
     else:
         return g, num_rels, num_classes, labels, train_idx, test_idx, target_idx
 
-if __name__ == "__main__":
-    dataset = AIFBDataset()
-    hg = dataset[0]
 
-    num_layers = 3
-    hidden_size = 64
-    dropout = 0.1
-    use_self_loop = False
-    num_bases = 1
-    num_epochs = 5
+def main(args):
+    g, num_rels, num_classes, labels, train_idx, test_idx, target_idx = load_data(data_name=args.dataset, get_norm=True)
 
-    g, num_rels, num_classes, labels, train_idx, test_idx, target_idx = load_data(get_norm=True)
-
-    # g.ntypes = 0
     graph = from_dgl(g, is_hetero=False)
-    # graph.ntypes=0
     num_nodes = graph.get_node_num()
-    model = RGCN(num_hidden_layers=num_layers, 
+    model = RGCN(num_hidden_layers=args.num_hidden_layers, 
                  input_size=num_nodes,
-                 hidden_size=hidden_size,
+                 hidden_size=args.hidden_size,
                  output_size=num_classes,
                  num_rels=num_rels,
-                 num_bases=num_bases,
-                 use_self_loop=use_self_loop,
-                 dropout = dropout)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
+                 num_bases=args.num_bases,
+                 use_self_loop=args.use_self_loop,
+                 gpu=args.gpu,
+                 dropout = args.dropout)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
     print("start training...")
-    forward_time = []
-    backward_time = []
     model.train()
-
-    for epoch in range(100):
+    for epoch in range(args.num_epochs):
         logits = model(graph).node_features["node_emb"]
         logits = logits[target_idx]
         loss = F.cross_entropy(logits[train_idx], labels[train_idx])
@@ -99,39 +123,61 @@ if __name__ == "__main__":
         optimizer.step()
 
         train_acc = accuracy(logits[train_idx].argmax(dim=1), labels[train_idx]).item()
-        print("Epoch {:05d} | Train Accuracy: {:.4f} | Train Loss: {:.4f}".format(
-            epoch, train_acc, loss.item()))
+        print("Epoch {:05d} | Train Accuracy: {:.4f} | Train Loss: {:.4f}".format(epoch, train_acc, loss.item()))
     print()
+    # Save Model
+    # torch.save(model.state_dict(), "./rgcn_model.pt")
+    print("start evaluating...")
+    model.eval()
+    with torch.no_grad():
+        logits = model(graph).node_features["node_emb"]
+    logits = logits[target_idx]
+    test_acc = accuracy(logits[test_idx].argmax(dim=1), labels[test_idx]).item()
+    print("Test Accuracy: {:.4f}".format(test_acc))
 
-    # for epoch in range(num_epochs):
-    #     optimizer.zero_grad()
-    #     t0 = time.time()
-    #     logits = model(graph)
-    #     logits = logits[target_idx]
-    #     loss = F.cross_entropy(logits[train_idx], labels[train_idx])
-    #     t1 = time.time()
-    #     loss.backward()
-    #     optimizer.step()
-    #     t2 = time.time()
 
-    #     forward_time.append(t1 - t0)
-    #     backward_time.append(t2 - t1)
-    #     print("Epoch {:05d} | Train Forward Time(s) {:.4f} | Backward Time(s) {:.4f}".
-    #           format(epoch, forward_time[-1], backward_time[-1]))
-    #     train_acc = torch.sum(logits[train_idx].argmax(dim=1) == labels[train_idx]).item() / len(train_idx)
-    #     val_loss = F.cross_entropy(logits[val_idx], labels[val_idx])
-    #     val_acc = torch.sum(logits[val_idx].argmax(dim=1) == labels[val_idx]).item() / len(val_idx)
-    #     print("Train Accuracy: {:.4f} | Train Loss: {:.4f} | Validation Accuracy: {:.4f} | Validation loss: {:.4f}".
-    #           format(train_acc, loss.item(), val_acc, val_loss.item()))
-    # print()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='RGCN for entity classification')
+    parser.add_argument("--num-hidden-layers", type=int, default=1,
+                        help="number of hidden layers beside input/output layer")
+    parser.add_argument("--hidden-size", type=int, default=16,
+                        help="dimension of hidden layer")
+    parser.add_argument("--gpu", type=int, default=-1,
+                        help="GPU device number, -1 for cpu")
+    parser.add_argument("--num-bases", type=int, default=-1,
+                        help="number of filter weight matrices, default: -1 [use all]")
+    parser.add_argument("-d", "--dataset", type=str, required=True,
+                        choices=['aifb', 'mutag', 'bgs', 'am'],
+                        help="dataset to use")
+    parser.add_argument("--use-self-loop", type=bool, default=False,
+                        help="Consider self-loop edges or not")
+    parser.add_argument("--dropout", type=float, default=0.0,
+                        help="Dropout rate")
+    parser.add_argument("--lr", type=float, default=1e-2,
+                        help="Start learning rate")
+    parser.add_argument("--wd", type=float, default=5e-4,
+                        help="weight decay")
+    parser.add_argument("--num-epochs", type=int, default=50,
+                        help="Number of training epochs")
 
-    # model.eval()
-    # logits = model.forward(g, feats, edge_type, edge_norm)
-    # logits = logits[target_idx]
-    # test_loss = F.cross_entropy(logits[test_idx], labels[test_idx])
-    # test_acc = torch.sum(logits[test_idx].argmax(dim=1) == labels[test_idx]).item() / len(test_idx)
-    # print("Test Accuracy: {:.4f} | Test loss: {:.4f}".format(test_acc, test_loss.item()))
-    # print()
+    args = parser.parse_args()
+    print(args)
+    main(args)
 
-    # print("Mean forward time: {:4f}".format(np.mean(forward_time[len(forward_time) // 4:])))
-    # print("Mean backward time: {:4f}".format(np.mean(backward_time[len(backward_time) // 4:])))
+
+
+
+
+"""Deprecated RGCN code on Heterogeneous graph due to 
+the lack of support from data structure. The following supports
+are needed (but not limit to):
+- Redefine the feature data structure of node/edge
+    - Index node/edge ids by their type.
+    - Enable type indexed features.
+- Make corresponding changes on views.
+- Make corresponding changes on set/get features functions.
+
+This example bypasses it by storing the features in the model
+itself. It is a code trick and therefore not recommended to
+the user.
+"""
