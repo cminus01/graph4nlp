@@ -87,6 +87,8 @@ class AMRGraphConstruction(StaticGraphConstructionBase):
         doc = nlp(raw_text_data)
         parsed_results = []
         graphs = doc._.to_amr()
+        for i in graphs:
+            print(i)
         st = []
         for ind, (graph, sentences) in enumerate(zip(graphs, doc.sents)):
             node_item = []
