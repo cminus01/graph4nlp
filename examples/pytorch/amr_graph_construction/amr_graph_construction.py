@@ -158,6 +158,11 @@ class AMRGraphConstruction(StaticGraphConstructionBase):
                         "sentence_id": len(parsed_results),
                     }
                     parsed_sent.append(dep_info)
+                    for x in parsed_results:
+                        if (x["src"] == fa and x["tgt"] == nodeid_now) \
+                            or (x["src"] == nodeid_now and x["tgt"] == fa):
+                            print(graphs)
+                            assert 0
                     pos_now = pos + '.' + str(size_son[pos] + 1)
                     size_son[pos_now] = 0
                     index[pos_now] = nodeid_now
