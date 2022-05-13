@@ -84,7 +84,7 @@ class AMRGraphConstruction(StaticGraphConstructionBase):
         """
         amrlib.setup_spacy_extension()
         nlp = spacy.load('en_core_web_sm')
-        doc = nlp(raw_text_data)
+        doc = nlp(raw_text_data + ' .')
         parsed_results = []
         graphs = doc._.to_amr()
         st = []
