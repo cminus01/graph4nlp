@@ -150,4 +150,9 @@ cscope.*
 /config
 local_scripts/
 
+<<<<<<< HEAD
 profiler/
+=======
+**/amr_graph_construction/mawps/*
+
+>>>>>>> fix
