@@ -12,12 +12,12 @@ export TOKENIZERS_PARALLELISM=True
 
 ### Run with following
 
+#### Run with amr graph adn RGCN
 ```python
-python examples/pytorch/math_word_problem/mawps/src/runner.py
+python examples/pytorch/math_word_problem/mawps/src_for_amr/runner.py -json examples/pytorch/math_word_problem/mawps/config_for_amr/dynamic_amr_undirected.json
+```
+#### Run with dependency graph and RGCN
+```python
+python examples/pytorch/math_word_problem/mawps/src_for_amr/runner.py -json examples/pytorch/math_word_problem/mawps/config_for_amr/dynamic_dependency_undirected.json
 ```
 
-## Results (Solution accuracy for MAWPS)
-
-| SAGE |undirected |  
-| ---- | ---- |  
-| Dynamic_node_emb | 76.4 |  
