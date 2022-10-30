@@ -104,7 +104,7 @@ class AmrEmbeddingConstruction(EmbeddingConstruction):
         bert_dropout=None,
         rnn_dropout=None,
     ):
-        super(AmrEmbeddingConstruction, self).__init__()
+        super(EmbeddingConstruction, self).__init__()
         self.word_dropout = word_dropout
         self.bert_dropout = bert_dropout
         self.rnn_dropout = rnn_dropout
@@ -203,11 +203,11 @@ class AmrEmbeddingConstruction(EmbeddingConstruction):
             rnn_input_size = word_emb_size
 
         if "pos" in word_emb_type:
-            self.word_emb_layers["pos"] = WordEmbedding(37, 50)
+            self.word_emb_layers["pos"] = WordEmbedding(50, 50)
             rnn_input_size += 50
 
         if "entity_label" in word_emb_type:
-            self.word_emb_layers["entity_label"] = WordEmbedding(26, 50)
+            self.word_emb_layers["entity_label"] = WordEmbedding(50, 50)
             rnn_input_size += 50
 
         if "position" in word_emb_type:
@@ -542,7 +542,7 @@ class RGCNGraph2Tree(Graph2Tree):
                 input_size,
                 hidden_size,
                 output_size,
-                num_rels=77,
+                num_rels=80,
                 num_bases=4,
                 gpu=0,
             )
@@ -614,6 +614,8 @@ class AMRGraph2Tree(RGCNGraph2Tree):
         share_vocab=False,
         **kwargs
     ):
+        style = embedding_style["emb_strategy"]
+        embedding_style["emb_strategy"] = "w2v_bilstm"
         super(RGCNGraph2Tree, self).__init__(
             vocab_model=vocab_model,
             embedding_style=embedding_style,
@@ -648,6 +650,7 @@ class AMRGraph2Tree(RGCNGraph2Tree):
             share_vocab=share_vocab,
             **kwargs
         )
+        embedding_style["emb_strategy"] = style
         self.graph_initializer = AMRGraphEmbeddingInitialization(
             word_vocab=vocab_model.in_word_vocab,
             embedding_style=embedding_style,

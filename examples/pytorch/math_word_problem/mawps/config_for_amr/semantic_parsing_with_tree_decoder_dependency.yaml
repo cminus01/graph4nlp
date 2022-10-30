@@ -38,7 +38,6 @@ model_args:
               normalizeParentheses: False
               normalizeOtherBrackets: False
             tokenize.whitespace: True
-            #ssplit.isOneSentence: True
             ssplit.isOneSentence: False
 
     graph_construction_private:

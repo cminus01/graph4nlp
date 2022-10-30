@@ -1,5 +1,5 @@
 {
-    "config_path": "examples/pytorch/math_word_problem/mawps/config_for_amr/semantic_parsing_with_tree_decoder.yaml",
+    "config_path": "examples/pytorch/math_word_problem/mawps/config_for_amr/semantic_parsing_with_tree_decoder_dependency.yaml",
     "checkpoint_args.checkpoint_name": "node_emb_sage_undirected.pt",
     "checkpoint_args.out_dir": "examples/pytorch/math_word_problem/mawps/config_for_amr/save",
     "env_args.gpuid": 0,
