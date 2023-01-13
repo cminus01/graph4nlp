@@ -1097,7 +1097,7 @@ class Text2TreeDataset(Dataset):
             embedding_dims=self.dec_emb_size,
         )
         if self.init_edge_vocab:
-            self.all_edge_words = VocabModel.collect_edge_vocabs(data_for_vocab, self.tokenizer, lower_case=self.lower_case)
+            all_edge_words = VocabModel.collect_edge_vocabs(data_for_vocab, self.tokenizer, lower_case=self.lower_case)
             edge_vocab = Vocab(lower_case=self.lower_case, tokenizer=self.tokenizer)
             edge_vocab.build_vocab(all_edge_words, max_vocab_size=None, min_vocab_freq=1)
             edge_vocab.randomize_embeddings(self.word_emb_size)
