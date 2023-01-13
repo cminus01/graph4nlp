@@ -15,7 +15,7 @@ from graph4nlp.pytorch.modules.graph_embedding_initialization.embedding_construc
 from graph4nlp.pytorch.modules.utils.generic_utils import dropout_fn
 from graph4nlp.pytorch.modules.utils.tree_utils import Tree
 
-from examples.pytorch.rgcn.rgcn import RGCN
+from graph4nlp.pytorch.modules.graph_embedding_learning.rgcn import RGCN
 from graph4nlp.pytorch.modules.utils.vocab_utils import Vocab
 
 warnings.filterwarnings("ignore")
@@ -536,15 +536,16 @@ class RGCNGraph2Tree(Graph2Tree):
         gnn_aggregator_type="lstm",  # graphsage
         **kwargs
     ):
+        rel = [i for i in self.vocab_model.edge_vocab.word2index]
         if gnn == "rgcn":
             self.gnn_encoder = RGCN(
                 num_layers,
                 input_size,
                 hidden_size,
                 output_size,
-                num_rels=80,
+                num_rels=len(rel) + 1,
                 num_bases=4,
-                gpu=0,
+                direction_option="undirected",
             )
         else:
             raise NotImplementedError()

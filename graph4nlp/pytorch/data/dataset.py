@@ -535,20 +535,20 @@ class Dataset(torch.utils.data.Dataset):
                     print(
                         "Building graph.... Processed/Remain: {} / {}".format(cnt, len(data_items))
                     )
-                try:
-                    graph = topology_builder.static_topology(
-                        raw_text_data=item.input_text,
-                        nlp_processor=nlp_processor,
-                        processor_args=nlp_processor_args,
-                        merge_strategy=merge_strategy,
-                        edge_strategy=edge_strategy,
-                        verbose=False,
-                    )
-                    item.graph = graph
-                except Exception as msg:
-                    pop_idxs.append(cnt)
-                    item.graph = None
-                    warnings.warn(RuntimeWarning(msg))
+                # try:
+                graph = topology_builder.static_topology(
+                    raw_text_data=item.input_text,
+                    nlp_processor=nlp_processor,
+                    processor_args=nlp_processor_args,
+                    merge_strategy=merge_strategy,
+                    edge_strategy=edge_strategy,
+                    verbose=False,
+                )
+                item.graph = graph
+                # except Exception as msg:
+                #     pop_idxs.append(cnt)
+                #     item.graph = None
+                #     warnings.warn(RuntimeWarning(msg))
                 ret.append(item)
             ret = [x for idx, x in enumerate(ret) if idx not in pop_idxs]
         elif static_or_dynamic == "dynamic":
@@ -1097,7 +1097,7 @@ class Text2TreeDataset(Dataset):
             embedding_dims=self.dec_emb_size,
         )
         if self.init_edge_vocab:
-            all_edge_words = VocabModel.collect_edge_vocabs(data_for_vocab, self.tokenizer, lower_case=self.lower_case)
+            self.all_edge_words = VocabModel.collect_edge_vocabs(data_for_vocab, self.tokenizer, lower_case=self.lower_case)
             edge_vocab = Vocab(lower_case=self.lower_case, tokenizer=self.tokenizer)
             edge_vocab.build_vocab(all_edge_words, max_vocab_size=None, min_vocab_freq=1)
             edge_vocab.randomize_embeddings(self.word_emb_size)

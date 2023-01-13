@@ -218,4 +218,5 @@ class RGCNLayer(GNNLayerBase):
                         layer_norm=layer_norm)
 
     def forward(self, graph, feat, etypes, norm=None):
+        print(etypes)
         return self.model(graph, feat, etypes, norm)

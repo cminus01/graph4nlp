@@ -253,13 +253,13 @@ class DependencyBasedGraphConstruction(StaticGraphConstructionBase):
             if edge_strategy is None or edge_strategy == "homogeneous":
                 ret_graph.add_edge(dep_info["src"], dep_info["tgt"])
             elif edge_strategy == "heterogeneous":  # add ``edge_type`` to graph_data
-                ret_graph.add_edge(dep_info["src"], dep_info["tgt"], dep_info["edge_type"])
+                ret_graph.add_edge(dep_info["src"], dep_info["tgt"], (0, dep_info["edge_type"], 0))
                 edge_idx = ret_graph.edge_ids(dep_info["src"], dep_info["tgt"])[0]
                 ret_graph.edge_attributes[edge_idx]["token"] = dep_info["edge_type"]
             elif edge_strategy == "as_node":
                 # insert a node
                 node_idx = ret_graph.get_node_num()
-                ret_graph.add_nodes(1)
+                ret_graph.add_nodes(1, ntypes=[0 for _ in range(1)])
                 ret_graph.node_attributes[node_idx]["type"] = 3  # 3 for edge node
                 ret_graph.node_attributes[node_idx]["token"] = dep_info["edge_type"]
                 ret_graph.node_attributes[node_idx]["position_id"] = None
@@ -327,8 +327,8 @@ class DependencyBasedGraphConstruction(StaticGraphConstructionBase):
             raise RuntimeError("There is no graph needed to merge.")
         node_num_list = [s_g.get_node_num() for s_g in nx_graph_list]
         node_num = sum(node_num_list)
-        g = GraphData()
-        g.add_nodes(node_num)
+        g = GraphData(is_hetero=True)
+        g.add_nodes(node_num, ntypes=[0 for _ in range(node_num)])
         node_idx_off = 0
 
         # copy edges
@@ -336,7 +336,7 @@ class DependencyBasedGraphConstruction(StaticGraphConstructionBase):
             for edge in s_g.get_all_edges():
                 src, tgt = edge
                 edge_idx_old = s_g.edge_ids(src, tgt)[0]
-                g.add_edge(src + node_idx_off, tgt + node_idx_off)
+                g.add_edge(src + node_idx_off, tgt + node_idx_off, (0, 'null', 0))
                 edge_idx_new = g.edge_ids(src + node_idx_off, tgt + node_idx_off)[0]
                 if cls.verbose > 0:
                     print(edge_idx_new, edge_idx_old)
@@ -383,7 +383,7 @@ class DependencyBasedGraphConstruction(StaticGraphConstructionBase):
                 print("merged edges")
                 print("src list:", src_list)
                 print("tgt list:", tgt_list)
-            g.add_edges(src_list, tgt_list)
+            g.add_edges(src_list, tgt_list, etypes=['null'] * len(src_list))
         else:
             raise NotImplementedError()
 

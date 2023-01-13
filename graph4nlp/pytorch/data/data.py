@@ -1525,14 +1525,14 @@ def to_batch(graphs: List[GraphData] = None) -> GraphData:
         big_graph.batch_graph_attributes.append(g.graph_attributes)
 
     # Step 9: merge node and edge types if the batch is heterograph
-    if is_heterograph:
-        node_types = []
-        edge_types = []
-        for g in graphs:
-            node_types.extend(g.node_types)
-            edge_types.extend(g.edge_types)
-        big_graph.node_types = node_types
-        big_graph.edge_types = edge_types
+    # if is_heterograph:
+    #     node_types = []
+    #     edge_types = []
+    #     for g in graphs:
+    #         node_types.extend(g.node_types)
+    #         edge_types.extend(g.edge_types)
+    #     big_graph.node_types = node_types
+    #     big_graph.edge_types = edge_types
     return big_graph
 
 
